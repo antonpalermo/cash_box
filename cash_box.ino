@@ -1,5 +1,5 @@
 void serial_init();
-void reset_indicator(int count);
+void device_state(unsigned long interval = 50);
 
 const int PIN_RESET = 4;
 const int PIN_COLLECT = 2;
@@ -12,6 +12,9 @@ int reset_interval = 5000;
 int reset_previous_state = LOW;
 // duration the reset button is pressed.
 unsigned long reset_pressed_duration = 0;
+
+// bool that checks of the LED indicator is on
+bool is_reset = true;
 
 void setup() {
   serial_init();
@@ -59,6 +62,8 @@ void loop() {
   // set current milliseconds
   current_millis = millis();
   reset_pressed_duration = millis();
+  // LED that indicates the device state.
+  device_state();
 
   // listen for reset long press.
   reset_onhold();
