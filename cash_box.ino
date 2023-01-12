@@ -1,3 +1,4 @@
+void serial_init();
 void reset_indicator(int count);
 
 const int PIN_RESET = 4;
@@ -13,15 +14,16 @@ int reset_previous_state = LOW;
 unsigned long reset_pressed_duration = 0;
 
 void setup() {
-  initialize_serial();
+  serial_init();
   // set light indicator.
+  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   // set reset button as input.
   pinMode(PIN_RESET, INPUT_PULLUP);
   // set store button as input.
   pinMode(PIN_COLLECT, INPUT_PULLUP);
   //
-  Serial.println("Setup Complete");
+  Serial.println("device ready");
 }
 
 unsigned long interval = 50;
@@ -51,12 +53,6 @@ void reset_onhold() {
 void collect_onpress() {
   // collect digital reading.
   int pinCollect = digitalRead(PIN_COLLECT);
-}
-
-void initialize_serial() {
-  Serial.begin(9600);
-  Serial.println("Initializing...");
-  delay(500);
 }
 
 void loop() {
