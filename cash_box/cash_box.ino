@@ -1,67 +1,83 @@
-// serial initializer
-void serial_init();
-// LED device state indicator.
-void device_state(unsigned long interval = 50);
-// collection procedures
-void execute_collection_procedures(int red, int green, int blue);
+#define BA_PIN (12)
 
-#include <tcs3200.h>
-#include <JC_Button.h>
+// 2 pulses means 20 pesos.
+// 5 pulses means 50 pesos.
+// 10 pulses means 100 pesos.
+// 20 pulses means 200 pesos.
+// 50 pulses means 500 pesos.
+// 100 pulses means 1000 pesos.
 
-// button pins
-const int PIN_RESET = 4;
-const int PIN_COLLECT = 2;
-// color sensor pins
-const int PIN_S0 = 8;
-const int PIN_S1 = 9;
-const int PIN_S2 = 10;
-const int PIN_S3 = 11;
-const int PIN_OUTPUT = 12;
+unsigned long curr_time;
 
-// bool that checks of the LED indicator is on
-bool is_reset = false;
-// current milliseconds.
-unsigned long current_millis = 0;
+unsigned long pulse_end;
+unsigned long pulse_begin;
+unsigned long pulse_duration;
 
-Button reset_button(PIN_RESET);
-Button collect_button(PIN_COLLECT, 100);
-// color sensor setup.
-tcs3200 tcs(PIN_S0, PIN_S1, PIN_S2, PIN_S3, PIN_OUTPUT);  // (S0, S1, S2, S3, output pin)  //
+int pulse_pause;
+int pulse_state;
+int pulse_count;
+
+int amount;
+int amount_recieved;
+int amount_per_pulse;
+
+int last_state;
+int debounce_speed;
+int min_pulse_width;
+int max_pulse_width;
 
 void setup() {
-  serial_init();
-  // set light indicator.
-  pinMode(LED_BUILTIN, OUTPUT);
-  // setup reset button.
-  reset_button.begin();
-  // setup collect button.
-  collect_button.begin();
-  // setup complete.
-  Serial.println("initializing serial complete...");
+  Serial.begin(115200);
+  pinMode(BA_PIN, INPUT);
+
+  last_state = 0;
+
+  debounce_speed = 4;
+  min_pulse_width = 40;
+  max_pulse_width = 60;
+
+  pulse_end = 0;
+  pulse_pause = 300;
+
+  amount = 0;
+  amount_recieved = 0;
+  amount_per_pulse = 10;
+
+
+  Serial.println("Device Ready");
 }
 
-int red, green, blue;
-
 void loop() {
-  // reset button (red) digital reading.
-  reset_button.read();
-  // collect button (white) digital reading.
-  collect_button.read();
-  // set current milliseconds
-  current_millis = millis();
-  // LED that indicates the device state.
-  device_state();
+  pulse_state = digitalRead(BA_PIN);
+  curr_time = millis();
 
-  // red color reading.
-  red = tcs.colorRead("r");
-  // green color reading.
-  green = tcs.colorRead("g");
-  // blue color reading.
-  blue = tcs.colorRead("b");
+  // pulse entered a new pulse.
+  if ((pulse_state == 1) && (last_state == 0)) {
+    // save the current milis()
+    pulse_begin = curr_time;
+    // set the previous state
+    last_state = 1;
+    // this means that the a pulse just ended
+  } else if ((pulse_state == 0) && (last_state == 1)) {
+    pulse_duration = curr_time - pulse_begin;
+    if (pulse_duration > debounce_speed) {
+      last_state = 0;
+    }
+    if ((pulse_duration > min_pulse_width) && (pulse_duration < max_pulse_width)) {
+      pulse_end = curr_time;
+      pulse_count++;
+    }
+  }
 
-  // if collection button is pressed.
-  if (collect_button.wasPressed()) {
-    // execute collection procedures.
-    execute_collection_procedures(red, green, blue);
+  if ((pulse_end > 0) && (curr_time - pulse_end > pulse_pause)) {
+    amount_recieved += pulse_count * amount_per_pulse;
+
+    amount += amount_recieved;
+    Serial.print("Total Amount: ");
+    Serial.println(amount);
+
+    pulse_end = 0;
+    pulse_count = 0;
+    amount_recieved = 0;
   }
 }
