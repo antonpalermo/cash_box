@@ -1,4 +1,10 @@
-#define BA_PIN (12)
+#include <SoftwareSerial.h>
+
+#define BA_PIN (12)  // Bill Acceptor Serial Pin
+#define VS_PIN (10)  // Vibration Sensor Serial Pin
+
+#define SERIAL_PIN_7 (7)
+#define SERIAL_PIN_8 (8)
 
 // 2 pulses means 20 pesos.
 // 5 pulses means 50 pesos.
@@ -6,6 +12,9 @@
 // 20 pulses means 200 pesos.
 // 50 pulses means 500 pesos.
 // 100 pulses means 1000 pesos.
+
+// Configure software serial port
+SoftwareSerial SMS(SERIAL_PIN_7, SERIAL_PIN_8);
 
 unsigned long curr_time;
 
@@ -26,8 +35,25 @@ int debounce_speed;
 int min_pulse_width;
 int max_pulse_width;
 
+void setup_messenger() {
+  SMS.begin(115200);
+  Serial.println("Initializing SMS Configuration");
+  // delay for 1 seconds
+  delay(1000);
+  Serial.println("SMS Configuration Initialized");
+  SMS.println("AT");
+  Serial.println("Initializeing Handsake");
+  delay(100);
+}
+
+void send_sms(String msg) {
+  SMS.print("")
+}
+
 void setup() {
   Serial.begin(115200);
+  setup_messenger();
+
   pinMode(BA_PIN, INPUT);
 
   last_state = 0;
@@ -49,6 +75,8 @@ void setup() {
 
 void loop() {
   pulse_state = digitalRead(BA_PIN);
+  vs_state = digitalRead(VS_PIN);
+
   curr_time = millis();
 
   // pulse entered a new pulse.
